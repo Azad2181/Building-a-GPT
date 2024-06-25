@@ -28,60 +28,95 @@ layer of the model generates the output sequence.
 ### Building a GPT is given step-by-step description with codebase:
 
 #### Step-01:
+
 import torch
+
 import torch.nn as nn
+
 from torch.nn import functional as F
+
 =>Firstly, we need import pytorch library function and neural network model (nn).
 with open('input.txt', 'r', encoding='utf-8') as f:
+
 text = f.read()
+
 print("length of dataset in characters: ", len(text))
+
 =>This code reads text from a file called input.txt. It is presumed that this file 
 includes text data, probably from the "tinyshakespeare" dataset, which is 
 commonly used to train language models. len function used for length of text.
 
 #### Step-02:
+
 chars = sorted(list(set(text)))
+
 vocab_size = len(chars)
+
 print(''.join(chars))
+
 print(vocab_size)
+
 stoi = { ch:i for i,ch in enumerate(chars) }
+
 itos = { i:ch for i,ch in enumerate(chars) }
+
 encode = lambda s: [stoi[c] for c in s]
+
 decode = lambda l: ''.join([itos[i] for i in l]) 
+
 print(encode("hii there")) 
+
 print(decode(encode("hii there"))) 
+
 => This code processes text data to generate a character vocabulary. It generates 
 mappings between characters (stoi) and numbers (itos). It also defines the encode 
 and decode functions, which convert texts to lists of numbers and vice versa.
+
 chars = sorted(list(set(text))): This line selects all unique characters from the text 
 data and puts them in a list.set(text) generates a set of unique characters from the 
 text.list(set(text)) returns the set to a list, ensuring that unique characters are 
 preserved.sorted() organizes the list alphabetically. 
+
 vocab_size = len(chars):This line determines the size of the vocabulary, which is 
 the total number of unique characters in the text. 
+
 stoi = { ch:i for i,ch in enumerate(chars) }: This line generates a dictionary where 
 each unique character is assigned a unique integer index. enumerate(chars) iterates 
 through the list of unique characters and returns both the character and its 
 index.{ch:i for i,ch in enumerate(chars) } creates a dictionary, mapping each 
 character to its appropriate index. 
+
 itos = { i:ch for i,ch in enumerate(chars) }: This code generates the inverse.
 
 #### Step-03:
+
 import torch 
+
 data = torch.tensor(encode(text), dtype=torch.long)
+
 print(data.shape, data.dtype)
+
 print(data[:1000
+
 torch.Size([1115394]) torch.int64
+
 n = int(0.9 * len(data))
+
 train_data = data[:n]
+
 val_data = data[n:]
+
 block_size = 8
+
 train_data[:block_size+1]
+
 => n = int(0.9*len(data)): This line determines the index for splitting the data into 
 training and validation sets. It transforms 90% of the length of the data tensor 
 (len(data)) to an integer (int(...)) by floor division. 
+
 Train_data = data[:n] builds the training dataset by picking the top 90% of data.It 
 slices the data tensor from index 0 to n while omitting the element at index n. 
+
 Val_data = data[n:]: This line generates the validation dataset by picking the final 
 10% of the data. It slices the data tensor from index n to the end, preserving the 
 element at index n. 
@@ -89,36 +124,55 @@ In conclusion, this block of code divides the encoded text input into training a
 validation sets, with the training set including.
 
 #### Step-04:
+
 x = train_data[:block_size]
+
 y = train_data[1:block_size+1]
+
 for t in range(block_size):
+
 context = x[:t+1]
+
 target = y[t]
+
 print(f"when input is {context} the target: {target}")
+
 torch.manual_seed(1337) 
+
 batch_size = 4 
+
 block_size = 8 
+
 def get_batch(split):
+
 data = train_data if split == 'train' else val_data
+
 ix = torch.randint(len(data) - block_size, (batch_size,))
+
 x = torch.stack([data[i:i+block_size] for i in ix]) 
+
 y = torch.stack([data[i+1:i+block_size+1] for i in ix])
+
 return x, y
+
 torch.manual_seed(1337) is the random seed for reproducibility of results when 
 using PyTorch's random number generator.The code function creates a tiny set of 
 data for training or validation. It uses random indices to generate block_size 
 sequences for inputs (x) and targets (y).
+
 ix = torch.randint(len(data) - block_size, (batch_size,)) produces random indices to 
 choose sequences from the dataset. len(data) - block_size computes the maximum 
 valid beginning index to guarantee that a sequence of length block_size may be 
 retrieved without exceeding its boundaries. torch.randint(...) returns a tensor of 
 random numbers in the range [0, len(data) - block_size) with the shape 
 (batch_size,). This produces batch_size random beginning indices for sequences. 
+
 x = torch.stack([data[i:i+block_size] for i in ix]): This line generates the input 
 tensor x by picking block_size sequences from the dataset. It utilizes list 
 comprehension to loop over the random indices ix and choose sequences of length 
 block_size beginning with each index. Torch.stack() creates the input tensor x by 
 stacking the sequences along a new dimension. 
+
 y = torch.stack([data[i+1:i+block_size+1].
 x, y = x.to(device), y.to(device).This line sends the input-output pairs x and y to 
 the chosen device ('cuda' or 'cpu') for calculation. It guarantees that the data is 
@@ -133,56 +187,105 @@ function makes it easier to load data for training and evaluating the language
 model.
 
 #### Step-05:
+
 xb, yb = get_batch('train')
+
 print('inputs:')
+
 print(xb.shape)
+
 print(xb)
+
 print('targets:')
+
 print(yb.shape)
+
 print(yb)
+
 print('----')
+
 for b in range(batch_size):
+
 for t in range(block_size):
+
 context = xb[b, :t+1]
+
 target = yb[b, t]
+
 print(f"when input is {context.tolist()} the target: {target}")
+
 print(xb)
 
 #### Step-06:
+
 import torch
+
 import torch.nn as nn
+
 from torch.nn import functional as F
+
 torch.manual_seed(1337)
+
 class BigramLanguageModel(nn.Module):
+
 def __init__(self, vocab_size):
+
 super().__init__()
+
 self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+
 def forward(self, idx, targets=None):
+
 logits = self.token_embedding_table(idx) # (B,T,C)
+
 if targets is None:
+
 loss = None
+
 else:
+
 B, T, C = logits.shape
+
 logits = logits.view(B*T, C)
+
 targets = targets.view(B*T)
+
 loss = F.cross_entropy(logits, targets)
+
 return logits, loss
+
 def generate(self, idx, max_new_tokens):
+
 for _ in range(max_new_tokens):
+
 logits, _ = self(idx)
+
 logits = logits[:, -1, :] # (B, C)
+
 probs = F.softmax(logits, dim=-1) # (B, C)
+
 idx_next = torch.multinomial(probs, num_samples=1) 
+
 idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
+
 return idx
+
 m = BigramLanguageModel(vocab_size)
+
 logits, loss = m(xb, yb)
+
 print(logits.shape)
+
 print(loss)
+
 generated_text_indices = m.generate(idx=torch.zeros((1, 1), dtype=torch.long), 
+
 max_new_tokens=100)
+
 generated_text = decode(generated_text_indices[0].tolist())
+
 print(generated_text)
+
 
 =>FeedFoward nn Module is a simple linear layer followed by a non-linearity 
 and defines a feedforward neural network layer used within the Transformer block. 
