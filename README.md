@@ -291,14 +291,16 @@ print(generated_text)
 and defines a feedforward neural network layer used within the Transformer block. 
 Block nn Module Transformer block is communication followed by computation. 
 And then use bigram language model.
+
 Now,
-Bigram Language Model:
+#### Bigram Language Model:
 Bigram Language Model is a statistical language model that forecasts the next 
 word in a sequence depending on the previous word. It specifically employs a 
 conditional probability distribution to assess the likelihood of a word given the 
 preceding word. A bigram model evaluates the conditional probability of a word 
 given just the immediately previous word.
-Bigram language model works:
+
+#### Bigram language model works:
 Training: During training, the model examines a vast corpus of text data and 
 counts the occurrences of each word pair (bigram) in it. 
 Probability Estimation: After training, the model computes the conditional 
@@ -321,16 +323,27 @@ utilized in a variety of natural language processing applications, including tex
 production, machine translation, and speech recognition.
 
 #### Step-7:
+
 optimizer = torch.optim.AdamW(m.parameters(), lr=1e-3)
+
 batch_size = 32
+
 for steps inrange(100):
+
 xb, yb = get_batch('train')
-logits, loss = m(xb, yb)
-optimizer.zero_grad(set_to_none=True) 
+
+logits, loss = m(xb, by)
+
+optimizer.zero_grad(set_to_none=True)
+
 loss.backward() 
+
 optimizer.step() 
+
 print(loss.item())
+
 print(decode(m.generate(idx = torch.zeros((1, 1), dtype=torch.long), 
+
 max_new_tokens=500)[0].tolist()))
 
 =>PyTorch optimizer is an object that performs the optimization algorithm to update 
@@ -341,47 +354,88 @@ and improve the model's performance.
 
 
 #### Step-8:
+
 The mathematical trick in self-attention:
+
 torch.manual_seed(42)
+
 a = torch.tril(torch.ones(3, 3)) 
+
 a = a / torch.sum(a, 1, keepdim=True)
+
 b = torch.randint(0, 10, (3, 2)).float() 
+
 c = a @ b
+
 print('a=')
+
 print(a)
+
 print('--')
+
 print('b=')
+
 print(b)
+
 print('--')
+
 print('c=')
-print(c
+
+print(c)
+
 torch.manual_seed(42)
+
 a = torch.tril(torch.ones(3, 3)) 
+
 a = a / torch.sum(a, 1, keepdim=True) 
+
 b = torch.randint(0, 10, (3, 2)).float()
 c = a @ b 
+
 print('a=')
+
 print(a)
+
 print('--')
+
 print('b=')
+
 print(b)
+
 print('--')
+
 print('c=')
+
 print(c)
+
 torch.manual_seed(1337)
+
 B, T, C = 4, 8, 2
+
 x = torch.randn(B, T, C)
+
 print(x.shape)
+
 torch.Size([4, 8, 2])
+
 xbow = torch.zeros((B, T, C))
+
 for b inrange(B):
+
 for t inrange(T):
+
 xprev = x[b, :t+1] # (t,C)
+
 xbow[b, t] = torch.mean(xprev, 0)
+
 wei = torch.tril(torch.ones(T, T))
+
 wei = wei / wei.sum(1, keepdim=True)
+
 xbow2 = wei @ x # (B, T, T) @ (B, T, C) ----> (B, T, C)
+
 torch.allclose(xbow, xbow2)
+
 =>Here, x represent self-attention mechanism B is batch size T is length sequence 
 and C is input embedding and wei means attention score.
 Here Using Softmax for weighted aggregation,
@@ -389,54 +443,89 @@ Softmax function:The softmax function is a mathematical function that converts a
 vector of numerical inputs into a probability distribution whose total equals one. It 
 accomplishes this by exponentiating each input value and then normalizing the 
 output. 
-Weighted Aggregation: Once you've received the probability distribution using 
+
+#### Weighted Aggregation: 
+Once you've received the probability distribution using 
 the softmax function, you may use it to calculate weighted averages or sums of 
 other variables. Each value is multiplied by the relevant probability from the 
 softmax distribution, and the products are added together. This yields an 
 aggregated value in which the more important values (those with greater 
 probability) contribute more to the final outcome.
+
 tril = torch.tril(torch.ones(T, T))
+
 wei = torch.zeros((T, T))
+
 wei = wei.masked_fill(tril == 0, float('-inf'))
+
 wei = F.softmax(wei, dim=-1)
+
 xbow3 = wei @ x
+
 torch.allclose(xbow, xbow3)
+
 torch.manual_seed(1337)
+
 B, T, C = 4, 8, 32
+
 x = torch.randn(B, T, C)
+
 head_size = 16
+
 key = nn.Linear(C, head_size, bias=False)
+
 query = nn.Linear(C, head_size, bias=False)
+
 value = nn.Linear(C, head_size, bias=False)
+
 k = key(x) # (B, T, 16)
+
 q = query(x) # (B, T, 16)
+
 v = value(x) # (B, T, 16)
+
 wei = q @ k.transpose(-2, -1) # (B, T, 16) @ (B, 16, T) ---> (B, T, T)
+
 tril = torch.tril(torch.ones(T, T))
+
 wei = wei.masked_fill(tril == 0, float('-inf'))
+
 wei = F.softmax(wei, dim=-1)
+
 out = wei @ v
+
 print(out.shape)
+
 torch.Size([4, 8, 16])
+
 wei[0] 
-Now, Self-attention mechanism using,
-Self-Attention: head_size = n_embd // n_head: This line determines the size of 
+
+Now, 
+Self-attention mechanism using,
+#### Self-Attention: 
+head_size = n_embd // n_head: This line determines the size of 
 each attention head by dividing the embedding dimension by the number of heads. 
 Self.SA = MultiHeadAttention(n_head, head_size): This line initializes an instance 
 of the MultiHeadAttention class (defined elsewhere) with the supplied number of 
 heads (n_head) and head size. This is the self-attention technique utilized in the 
 transformer block.
-Feedforward Neural Network: self.ffwd = FeedForward(n_embd); This line 
+
+#### Feedforward Neural Network: 
+self.ffwd = FeedForward(n_embd); This line 
 initializes an instance of the FeedForward class (defined elsewhere) with the 
 embedding dimension (n_embd). This feedforward neural network is used after the 
 self-attention mechanism to add nonlinearity and improve the model's ability to 
 catch complicated patterns in data.
-Layer Normalization: self.ln1 = nn.LayerNorm(n_embd): This line defines a 
+
+#### Layer Normalization: 
+self.ln1 = nn.LayerNorm(n_embd): This line defines a 
 layer normalization module with n_embd as its input dimension. Layer 
 normalization ensures that each layer's activations are consistent across 
 features.self.ln2 = nn.LayerNorm(n_embd): This line generates another layer 
 normalization module.
-Forward Method: def forward(self, x): This function specifies the Block module's 
+
+#### Forward Method: def forward(self, x): 
+This function specifies the Block module's 
 forward pass. It accepts an input tensor x of the shape (B, T, C), where B is the 
 batch size, T is the sequence length, and C is the embedding dimension.x = x +
 self.sa(self.ln1(x)); This line implements the self-attention mechanism, followed by 
@@ -449,13 +538,21 @@ network, followed by residual connection and layer normalization.
 
 
 #### Step-9:
+
 def __init__(self, head_size):
+
 super().__init__()
+
 self.key = nn.Linear(n_embd, head_size, bias=False)
+
 self.query = nn.Linear(n_embd, head_size, bias=False)
+
 self.value = nn.Linear(n_embd, head_size, bias=False)
+
 self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+
 self.dropout = nn.Dropout(dropout)
+
 =>Here using dropout function. This defines a dropout layer whose probability is 
 given by the dropout parameter. Dropout is applied to the attention weights before 
 they are used to calculate the weighted total. This helps to minimize overfitting by 
@@ -463,50 +560,73 @@ randomly removing (setting to zero) some attention weights during training.
 
 
 #### Step-10:
+
 Overall hyperparameters,
-batch_size = 16
+
+#### batch_size = 16
+
 This hyperparameter defines how many samples the model processes during each 
 training iteration.A batch size of 16 indicates that the model adjusts its weights 
 based on the average loss computed over 16 samples at a time.
-block_size = 32
+
+#### block_size = 32
+
 This hyperparameter determines the maximum context length for predictions. In 
 the context of language models, it often refers to the longest sequences (in terms of 
 tokens/words) that the model can process at once.Longer sequences can be 
 shortened or divided into smaller chunks for processing.
-max_iters = 5000
+
+#### max_iters = 5000
+
 This option determines the maximum number of training iterations (or steps) that 
 can be used during the training process. The training loop will continue for 5000 
 iterations, at which point training will cease or until the convergence requirements 
 are reached.
-eval_interval = 100
+
+#### eval_interval = 100
+
 This parameter controls how frequently the model's performance is tested on the 
 training and validation sets during training.Every 100 iterations of training will be 
 evaluated.
-learning_rate = 1e-3
+
+#### learning_rate = 1e-3
+
 This hyperparameter controls the optimizer's learning rate.The learning rate 
 determines the step size used during gradient descent, which influences training 
 speed and stability.
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+#### device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 This line determines the device (GPU or CPU) for computing based on the 
 availability of CUDA.If CUDA is enabled (i.e., a GPU is present), the model will 
 be trained on it. Otherwise, it will train using the CPU ('cpu').
-eval_iters = 200
+
+#### eval_iters = 200
+
 This option determines how many iterations are utilized to evaluate (calculate loss) 
 during each evaluation phase.During assessment, the model's performance is 
 measured on a portion of the data, with 200 iterations each evaluation.
-n_embd = 64
+
+#### n_embd = 64
+
 This hyperparameter determines the dimensionality of the embedding vectors. 
 Embedding vectors are representations of tokens/words in a continuous vector 
 space, whose size is determined by n_embd.
-n_head = 4
+
+#### n_head = 4
+
 This parameter controls the number of attention heads in the multi-head attention 
 mechanism.Multi-head attention enables the model to focus on many sections of 
 the input sequence at the same time, improving its capacity to detect dependencies.
-n_layer = 4
+
+#### n_layer = 4
+
 This hyperparameter controls the number of layers in the transformer model. 
 Each layer is made up of multi-head attention and feedforward neural network 
 blocks, which help to learn complicated patterns in data.
-dropout = 0.0
+
+#### dropout = 0.0
+
 This parameter governs the dropout probability in the model's layers. 
 A dropout value of 0.0 indicates that dropout has been turned off, and no units will 
 be discarded during training.
